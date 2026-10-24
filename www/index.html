@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#b71c1c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="RAKSHAK">
+<title>RAKSHAK · Local Emergency Coordination Platform</title>
+<link rel="stylesheet" href="leaflet/leaflet.css">
+<style>
+:root{--bg:#11141b;--card:#181d28;--tx:#f3f4f6;--mut:#9ca3af;--ac:#ef4444;--ac-dark:#b91c1c;--bd:#262e40;--ok:#10b981;--wn:#f59e0b;--cr:#ef4444;--blue:#3b82f6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="light"]{--bg:#f8fafc;--card:#ffffff;--tx:#0f172a;--mut:#64748b;--ac:#dc2626;--ac-dark:#991b1b;--bd:#e2e8f0;--ok:#16a34a;--wn:#d97706;--cr:#dc2626;--blue:#2563eb}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none;-webkit-user-select:none}
+main{flex:1;overflow-y:auto;padding:14px;max-width:620px;width:100%;margin:0 auto;box-sizing:border-box}
+nav{flex:none;display:flex;background:var(--card);border-top:1px solid var(--bd);box-shadow:0 -4px 12px rgba(0,0,0,.25)}
+nav button{flex:1;border:0;background:none;color:var(--mut);padding:8px 0;font-size:11px;cursor:pointer;transition:all .15s}
+nav button span{display:block;font-size:20px;margin-bottom:2px}nav button.on{color:var(--ac);font-weight:700}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.5px}h2{font-size:16px;margin:0 0 8px;font-weight:700}
+.pill{font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--bd);color:var(--mut);background:rgba(255,255,255,.04);display:inline-flex;align-items:center;gap:4px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:15px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.15);position:relative}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.mut{color:var(--mut);font-size:13px}
+input[type=text],input[type=tel],input[type=number],select,textarea{width:100%;padding:11px;margin:5px 0;border:1px solid var(--bd);border-radius:10px;background:rgba(0,0,0,.25);color:var(--tx);font:inherit;box-sizing:border-box}
+:root[data-theme="light"] input,:root[data-theme="light"] select,:root[data-theme="light"] textarea{background:#f1f5f9}
+label.c{display:flex;gap:10px;align-items:center;margin:8px 0;font-size:14px;cursor:pointer}
+.btn{padding:9px 14px;border:1px solid var(--ac);background:transparent;color:var(--ac);border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;transition:all .15s;min-height:42px;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box}
+.btn:active{transform:scale(.98)}.btn.f{background:var(--ac);color:#fff;border-color:var(--ac)}
+.btn.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
+.sos-btn{width:100%;padding:28px 16px;font-size:26px;font-weight:900;border:0;border-radius:24px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;letter-spacing:2px;box-shadow:0 0 24px rgba(239,68,68,.4);cursor:pointer;margin-bottom:14px;position:relative;overflow:hidden;animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 16px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.lv{font-weight:700;font-size:11px;padding:3px 9px;border-radius:6px;color:#fff;text-transform:uppercase;letter-spacing:.5px}
+.Critical{background:var(--cr)}.High{background:var(--wn)}.Medium{background:#eab308;color:#000}.Standard{background:var(--ok)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:6px 12px;border:1px solid var(--bd);border-radius:99px;background:rgba(255,255,255,.04);color:var(--tx);cursor:pointer;font-size:13px;transition:all .15s}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac);font-weight:600}
+.banner{background:rgba(245,158,11,.12);color:var(--tx);border:1px solid var(--wn);padding:12px;border-radius:14px;margin-bottom:14px;font-size:13px;display:flex;gap:8px;align-items:center}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.ib{padding:12px 8px;border:1px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}.ib:active{transform:scale(.97)}.ib span{display:block;font-size:26px;margin-bottom:4px}
+.calc{background:#0a0c10;border-radius:20px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.5);max-width:320px;margin:0 auto 14px;border:1px solid #1e2330}
+.calc-screen{background:#161922;border-radius:12px;padding:16px 14px;font-size:32px;font-weight:700;color:#fff;text-align:right;margin-bottom:14px;font-family:monospace;letter-spacing:1px;min-height:42px;overflow:hidden;word-break:break-all}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.calc-btn{height:52px;border-radius:12px;border:0;background:#242938;color:#f3f4f6;font-size:18px;font-weight:600;cursor:pointer;transition:background .1s}
+.calc-btn:active{background:#3b4254}.calc-btn.op{background:#374151;color:#fbbf24}
+.calc-btn.eq{background:#e53935;color:#fff;font-weight:800}.calc-btn.clear{background:#4b5563;color:#fff}
+.box-breathe{text-align:center;padding:20px 0}
+.breathe-circle{width:120px;height:120px;border-radius:50%;margin:0 auto 16px;background:rgba(59,130,246,.2);border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--tx);font-size:14px;animation:breathe 16s infinite ease-in-out}
+@keyframes breathe{0%{transform:scale(.8);opacity:.5}25%{transform:scale(1.25);opacity:1}50%{transform:scale(1.25);opacity:1}75%{transform:scale(.8);opacity:.5}100%{transform:scale(.8);opacity:.5}}
+#leaflet-map{height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--bd);margin-bottom:14px}
+.pulse-gps{width:14px;height:14px;border-radius:50%;background:#ef4444;border:2px solid #fff;box-shadow:0 0 0 rgba(239,68,68,.7);animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 12px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+@media(min-width:700px){body{font-size:16px}main{max-width:720px;padding:24px}.g{grid-template-columns:repeat(4,1fr)}h1{font-size:26px}}
+@media(min-width:900px){body{flex-direction:row-reverse}nav{flex-direction:column;width:210px;border-top:0;border-right:1px solid var(--bd);padding:14px 10px;justify-content:flex-start;gap:6px}nav button{flex:none;display:flex;align-items:center;gap:12px;font-size:15px;padding:12px 14px;border-radius:12px;text-align:left}nav button span{display:inline;font-size:22px;margin:0}nav button.on{background:rgba(229,57,53,.15)}main{max-width:860px}}
+</style></head>
+<body><main id="app"></main><nav id="nav"></nav>
+<script src="leaflet/leaflet.js"></script>
+<script src="sync.js"></script>
+<script src="ai-core.js"></script>
+<script src="assistant.js"></script>
+<script>
+// ---------- RAKSHAK Core State & Emergency Knowledge Base ----------
+const SH = [
+  {id:1, n:"MANIT Relief Hub", med:3, kits:25, mat:8, water:450, food:320, beds:50, la:23.2156, lo:77.4094},
+  {id:2, n:"District Hospital Annex", med:8, kits:40, mat:15, water:800, food:600, beds:95, la:23.2599, lo:77.4126},
+  {id:3, n:"Govt Relief Camp", med:1, kits:35, mat:3, water:300, food:250, beds:40, la:23.2332, lo:77.4300}
+];
+try{const c=JSON.parse(localStorage.getItem("shsh"));if(c&&c.length)SH.splice(0,SH.length,...c)}catch(e){}
+
+const ST=["sos","dispatched","enroute","safe"];
+const LB={sos:"SOS Broadcasted",dispatched:"Responders Dispatched",enroute:"En Route",safe:"Safe / Resolved"};
+const LVS=["Standard","Medium","High","Critical"];
+
+// First Aid Protocols (Module 3)
+const I = [
+  {id:"cpr", i:"🫀", n:"Unconscious / No Breathing", s:3, cpr:1,
+   st:["Scene safety check: Tap shoulders, shout 'Are you okay?'. No response: shout for an AED and call 112.",
+       "Tilt head back, lift chin. Check for normal breathing for 10 seconds. Agonal gasping is NOT normal breathing.",
+       "Not breathing: Place heel of hand on center of chest. Push hard and fast (5-6 cm deep, 100-120 pushes/min).",
+       "Turn on the Metronome beat below to lock into 110 beats per minute.",
+       "If trained: 30 compressions followed by 2 rescue breaths. If untrained: non-stop continuous chest compressions.",
+       "Do not pause until medical responders take over, AED voice instructions prompt you, or patient breathes."]},
+  {id:"bleed", i:"🩸", n:"Severe Bleeding", s:2,
+   st:["Immediate priority: Call 112. Put on clean gloves or wrap hand in clean plastic if possible.",
+       "Press hard directly on the wound with clean cloth or sterile gauze. Do not remove the initial dressing if soaked.",
+       "If bleeding continues through cloth, add more dressings on top and maintain continuous maximum body weight pressure.",
+       "Severe extremity arterial bleeding that will not stop: apply a tourniquet 5 cm above wound (never on joint). Note time.",
+       "Lay victim flat, elevate legs slightly to combat shock, cover with blanket to keep warm. Do not give water or food."]},
+  {id:"panic", i:"🧘", n:"Panic Attack / Extreme Anxiety", s:1, panic:1,
+   st:["Guide Box Breathing: Inhale through nose for 4s, hold for 4s, exhale slowly through mouth for 4s, hold for 4s.",
+       "Grounding 5-4-3-2-1: Name 5 things you can see, 4 things you can feel, 3 things you hear, 2 things you smell, 1 affirmation.",
+       "Speak in a low, calm, confident voice: 'You are safe right now. This feeling will peak and pass.'",
+       "Loosen any restrictive collar or clothing. Offer small sips of cool water.",
+       "Free confidential 24/7 mental health crisis support in India: Call Tele-MANAS at 14416 or 112."]},
+  {id:"labour", i:"🤰", n:"Emergency Labour / Childbirth", s:3,
+   st:["Call 112 or 102 immediately. Position mother lying on her left side on clean towels.",
+       "Contractions 2-3 minutes apart or baby crowning: Prepare warm clean blankets. Wash hands thoroughly.",
+       "Gently support the baby's head as it emerges. NEVER pull or push on the baby.",
+       "If umbilical cord is around the neck, gently slip it over the baby's head.",
+       "Immediately dry baby, wrap warmly, and place skin-to-skin directly on mother's bare chest. Cover both.",
+       "DO NOT cut the umbilical cord. Leave placenta intact until trained medical team arrives."]},
+  {id:"burn", i:"🔥", n:"Burns & Scalds", s:1,
+   st:["Remove source of heat. Remove rings or tight items near burn before swelling occurs.",
+       "Cool immediately under clean, running tap water for 20 full minutes. Never apply ice, butter, or toothpaste.",
+       "Cover loosely with clean plastic cling film or clean non-adherent cotton cloth.",
+       "Large burns, facial burns, chemical or electrical burns: urgent transport to hospital.",
+       "Keep patient warm to prevent hypothermia; hydrate with small sips of clean water if conscious."]},
+  {id:"snake", i:"🐍", n:"Snake / Animal Bite", s:2,
+   st:["Move clear of animal safely. Keep patient immobilized and calm - movement accelerates venom absorption.",
+       "Keep bitten limb immobilized below or at heart level. Remove rings, watches, and tight footwear.",
+       "Apply a broad pressure immobilization bandage firmly along limb. DO NOT cut, suck, ice, or apply tourniquet.",
+       "Note snake markings/color if seen safely. Call 112 and proceed to nearest hospital stocking anti-venom at once."]}
+];
+
+const h = (t, a={}, ...c) => {
+  const e = document.createElement(t);
+  for (const k in a) {
+    if (k === "class") e.className = a[k];
+    else if (k.startsWith("on")) e[k] = a[k];
+    else e.setAttribute(k, a[k]);
+  }
+  c.flat().forEach(x => { if (x !== null && x !== undefined) e.append(x); });
+  return e;
+};
+
+// Global State
+let db = null, uid = null, mine = null, all = [], tab = "home", offline = null, D = {}, net = navigator.onLine, loc = null;
+let supplyRequests = [];
+let healthRecords = [];
+let watchId = null;
+let liveInterval = null;
+let clientLeafletMap = null;
+let userMapMarker = null;
+
+let lang = (()=>{try{return localStorage.getItem("rakshak_lang")||"en"}catch(e){return"en"}})(), isHi = lang === "hi";
+function toggleLang() {
+  lang = lang === "en" ? "hi" : "en";
+  isHi = lang === "hi";
+  AI.lang = lang;
+  try { localStorage.setItem("rakshak_lang", lang); } catch(e){}
+  render();
+}
+
+try { D = JSON.parse(localStorage.getItem("rakshak_vault") || localStorage.getItem("sh2") || "{}"); } catch(e){}
+try { loc = JSON.parse(localStorage.getItem("shloc")); } catch(e){}
+
+let em = {
+  ph: "list",
+  act: null,
+  ans: { cons: null, br: null, bl: null, ppl: "1" },
+  desc: "",
+  where: "",
+  room: "",
+  sent: 0,
+  stealth: false,
+  st: 0,
+  voice: false
+};
+
+let calcState = { expr: "", display: "0" };
+let mt = null, ac = null;
+
+// User Profile helpers
+const P = () => D;
+const upP = u => {
+  D = { ...D, ...u };
+  try { localStorage.setItem("rakshak_vault", JSON.stringify(D)); } catch(e){}
+  render();
+};
+
+const score = p => (+p.preg || 0)*3 + (p.mob ? 4 : 0) + (p.eld ? 2 : 0) + (p.chr ? 3 : 0) + (p.med ? 2 : 0);
+const lvl = s => s >= 7 ? "Critical" : s >= 4 ? "High" : s >= 2 ? "Medium" : "Standard";
+const lvBadge = l => h("span", { class: "lv " + l }, l);
+const flags = p => [
+  p.preg && p.preg !== "0" && (p.preg === "3" ? "3rd Trimester Pregnant" : "Pregnant"),
+  p.mob && "Mobility Impairment",
+  p.eld && "Senior (60+)",
+  p.chr && "Chronic Condition",
+  p.med && "Requires Daily Meds"
+].filter(Boolean);
+
+// Real-Time GPS Tracking with continuous updates to local Admin Hub
+function geo() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      loc = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() };
+      try { localStorage.setItem("shloc", JSON.stringify(loc)); } catch(e){}
+      if (mine && window.RAKSHAK_API) {
+        RAKSHAK_API.sendLocation(loc.lat, loc.lng, loc.acc).catch(()=>{});
+      }
+      render();
+    },
+    () => {},
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
+  );
+}
+
+// Continuous tracking while SOS is active
+function startLiveTracking() {
+  if (watchId !== null) return;
+  if (!navigator.geolocation) return;
+  watchId = navigator.geolocation.watchPosition(
+    p => {
+      loc = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() };
+      try { localStorage.setItem("shloc", JSON.stringify(loc)); } catch(e){}
+      if (window.RAKSHAK_API) {
+        RAKSHAK_API.sendLocation(loc.lat, loc.lng, loc.acc).catch(()=>{});
+      }
+    },
+    () => {},
+    { enableHighAccuracy: true, maximumAge: 3000 }
+  );
+
+  liveInterval = setInterval(() => {
+    if (loc && window.RAKSHAK_API) {
+      RAKSHAK_API.sendLocation(loc.lat, loc.lng, loc.acc).catch(()=>{});
+    }
+  }, 4000);
+}
+
+function stopLiveTracking() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  if (liveInterval) {
+    clearInterval(liveInterval);
+    liveInterval = null;
+  }
+}
+
+// Haversine distance calculator
+const hvd = (a,b,c,d) => {
+  const R=6371e3, r=x=>x*Math.PI/180, df=r(c-a), dl=r(d-b);
+  const v=Math.sin(df/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dl/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(v),Math.sqrt(1-v));
+};
+const brg = (a,b,c,d) => {
+  const r=x=>x*Math.PI/180, y=Math.sin(r(d-b))*Math.cos(r(c)), x=Math.cos(r(a))*Math.sin(r(c))-Math.sin(r(a))*Math.cos(r(c))*Math.cos(r(d-b));
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+};
+const dir = b => ["N","NE","E","SE","S","SW","W","NW"][Math.round(b/45)%8];
+const fd = m => m < 1000 ? Math.round(m) + " m" : (m/1000).toFixed(1) + " km";
+
+// Sorted shelters prioritizing nearest local shelter
+function getSortedShelters() {
+  const list = [...SH];
+  if (loc && loc.lat != null && loc.lng != null) {
+    list.forEach(s => {
+      s.d = hvd(loc.lat, loc.lng, s.la, s.lo);
+      s.b = brg(loc.lat, loc.lng, s.la, s.lo);
+    });
+    list.sort((a,b) => (a.d || 0) - (b.d || 0));
+  }
+  return list;
+}
+
+// Emergency Alert Payload Builder
+function payload(stealth = false) {
+  const p = P(), s = score(p);
+  const nearest = getSortedShelters()[0];
+  return {
+    name: p.name || (stealth ? "Silent Distress Alert" : "Citizen In Danger"),
+    score: s,
+    level: stealth ? "Critical" : (s >= 5 ? "Critical" : "High"),
+    flags: flags(p),
+    blood: p.blood || "",
+    allergies: p.allergies || "",
+    c1n: p.c1n || "",
+    c1p: p.c1p || "",
+    c2n: p.c2n || "",
+    c2p: p.c2p || "",
+    shelter: nearest ? nearest.n : "Nearest Relief Haven",
+    status: "sos",
+    t: Date.now(),
+    issue: stealth ? "STEALTH SHIELD SILENT SOS" : (em.desc || "Immediate Emergency Assistance Needed"),
+    ans: em.ans,
+    desc: em.desc,
+    where: em.where,
+    room: em.room || "",
+    stealth: !!stealth,
+    lat: loc ? loc.lat : 23.23,
+    lng: loc ? loc.lng : 77.42,
+    acc: loc ? Math.round(loc.acc || 0) : 20,
+    log: [{ t: Date.now(), e: "SOS Broadcasted" + (stealth ? " [STEALTH CALCULATOR]" : "") }]
+  };
+}
+
+async function sendAlert(stealth = false) {
+  geo();
+  const d = payload(stealth);
+  em.sent = 1;
+  em.stealth = !!stealth;
+  mine = d;
+  offline = null;
+  startLiveTracking();
+
+  try {
+    if (db) await db.doc("sos/" + uid).set(d);
+  } catch(e) {
+    try { localStorage.setItem("shq", JSON.stringify(d)); } catch(_) {}
+  }
+  if (!stealth && navigator.vibrate) navigator.vibrate([150, 75, 150]);
+  render();
+}
+
+async function clearSOS() {
+  mine = null;
+  offline = null;
+  em.sent = 0;
+  em.stealth = false;
+  stopLiveTracking();
+  try { localStorage.removeItem("shq"); } catch(e){}
+  try { if (db) await db.doc("sos/" + uid).delete(); } catch(e){}
+  render();
+}
+
+// Stealth Calculator Trigger
+function calcPress(btn) {
+  if (btn === "C") {
+    calcState.expr = "";
+    calcState.display = "0";
+  } else if (btn === "=") {
+    if (calcState.expr === "911" || calcState.expr === "112" || calcState.expr.endsWith("+911") || calcState.expr.endsWith("+112")) {
+      sendAlert(true); // Silent stealth SOS!
+      calcState.expr = "";
+      calcState.display = "0";
+      return render();
+    }
+    try {
+      const safe = calcState.expr.replace(/[^0-9+\-*/.]/g, "");
+      const res = Function("return " + safe)();
+      calcState.display = String(Number.isFinite(res) ? +res.toFixed(4) : "0");
+      calcState.expr = calcState.display;
+    } catch(e) {
+      calcState.display = "0";
+      calcState.expr = "";
+    }
+  } else {
+    if (calcState.display === "0" && /[0-9]/.test(btn)) calcState.expr = "";
+    calcState.expr += btn;
+    calcState.display = calcState.expr;
+  }
+  render();
+}
+
+// Daily Health Records Logging
+async function logDailyHealth(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    bp: form.bp.value.trim(),
+    temp: form.temp.value ? +form.temp.value : null,
+    pulse: form.pulse.value ? +form.pulse.value : null,
+    spo2: form.spo2.value ? +form.spo2.value : null,
+    sugar: form.sugar.value ? +form.sugar.value : null,
+    notes: form.notes.value.trim()
+  };
+  try {
+    if (window.RAKSHAK_API) {
+      await RAKSHAK_API.saveHealthRecord(data);
+    }
+    healthRecords.unshift({ ...data, created: Date.now() });
+    form.reset();
+    alert(isHi ? "दैनिक स्वास्थ्य रिकॉर्ड सुरक्षित रूप से दर्ज किया गया।" : "Daily health vitals logged successfully.");
+    render();
+  } catch(err) {
+    alert("Could not log record.");
+  }
+}
+
+async function loadHealthHistory() {
+  if (window.RAKSHAK_API) {
+    try {
+      healthRecords = await RAKSHAK_API.getHealthRecords();
+      render();
+    } catch(e){}
+  }
+}
+
+// ---------- View Renderers ----------
+
+// 1. Home Screen
+function home() {
+  const p = P();
+  const sorted = getSortedShelters();
+  const nearest = sorted[0];
+
+  return h("div", {},
+    // Top Bar with Language Switch
+    h("div", { class: "top" },
+      h("div", {},
+        h("h1", {}, "🛡️ RAKSHAK"),
+        h("div", { class: "mut" }, isHi ? "शून्य-इंटरनेट आपातकालीन सुरक्षा ग्रिड" : "Zero-Internet Emergency Mesh Hub")
+      ),
+      h("div", { style: "display:flex;gap:6px" },
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer;font-weight:700;border-color:var(--ac);color:var(--tx)",
+          onclick: toggleLang
+        }, isHi ? "English" : "हिन्दी"),
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer",
+          onclick: () => { tab = "calc"; render(); }
+        }, "🧮 " + (isHi ? "कैलकुलेटर" : "Stealth"))
+      )
+    ),
+
+    // Active SOS Banner
+    mine ? h("div", { class: "card", style: "border:2px solid var(--ac);background:rgba(239,68,68,.12)" },
+      h("div", { class: "row" },
+        h("div", {},
+          h("b", { style: "color:var(--ac);font-size:16px" }, isHi ? "🚨 आपातकालीन एसओएस सक्रिय है" : "🚨 EMERGENCY SOS BROADCASTING"),
+          h("div", { class: "mut", style: "margin-top:2px" },
+            isHi ? "निकटतम राहत केंद्र एवं ऑपरेटर को लाइव जीपीएस भेजा जा रहा है" : "Live GPS transmitting to nearest Haven & Responders"
+          )
+        ),
+        h("span", { class: "pill", style: "background:var(--ac);color:#fff;font-weight:800" }, LB[mine.status] || mine.status)
+      ),
+      h("div", { style: "margin-top:10px;display:flex;gap:8px" },
+        h("button", { class: "btn blue", style: "flex:1", onclick: () => { tab = "sos"; render(); } }, isHi ? "एसओएस विवरण" : "SOS Details"),
+        h("button", { class: "btn f", style: "flex:1", onclick: clearSOS }, isHi ? "एसओएस रद्द करें" : "Cancel SOS")
+      )
+    ) : null,
+
+    // Big Prominent 1-Tap SOS Button
+    !mine ? h("button", {
+      class: "sos-btn",
+      onclick: () => sendAlert(false)
+    },
+      h("span", { style: "display:block;font-size:32px;margin-bottom:4px" }, "🆘"),
+      isHi ? "1-टैप आपातकालीन एसओएस" : "1-TAP EMERGENCY SOS",
+      h("div", { style: "font-size:12px;font-weight:600;letter-spacing:0;margin-top:4px;opacity:.9" },
+        isHi ? "निकटतम राहत केंद्र एवं स्थानीय नेटवर्क को तुरंत सूचित करें" : "Alerts Nearest Havens & Local Rescue Responders"
+      )
+    ) : null,
+
+    // Quick Feature Navigation Grid
+    h("div", { class: "g" },
+      h("div", { class: "ib", onclick: () => { tab = "ask"; render(); } },
+        h("span", {}, "🤖"),
+        isHi ? "ट्राइएज / प्राथमिक उपचार" : "Triage & First-Aid"
+      ),
+      h("div", { class: "ib", onclick: () => { tab = "map"; render(); } },
+        h("span", {}, "🗺️"),
+        isHi ? "ऑफलाइन राहत केंद्र" : "Offline Havens Map"
+      ),
+      h("div", { class: "ib", onclick: () => { tab = "supplies"; render(); } },
+        h("span", {}, "📦"),
+        isHi ? "सामान / राशन स्टॉक" : "Relief Supplies"
+      ),
+      h("div", { class: "ib", onclick: () => { tab = "vault"; render(); } },
+        h("span", {}, "🔒"),
+        isHi ? "हेल्थ प्रोफाइल" : "Health Profile"
+      )
+    ),
+
+    // Dual-AI Engine Selector (Gemma 4 Offline / Gemini Online)
+    h("div", { class: "card", style: "border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.06);padding:12px" },
+      h("div", { class: "row", style: "margin-bottom:8px" },
+        h("div", { style: "display:flex;align-items:center;gap:6px" },
+          h("b", { style: "font-size:13px" }, "🤖 RAKSHAK AI Engine:"),
+          h("span", {
+            class: "pill",
+            style: AI.engine === "gemini" ? "color:#60a5fa;border-color:#3b82f6" : AI.engine === "gemma" ? "color:#34d399;border-color:#10b981" : "color:#fbbf24;border-color:#f59e0b"
+          }, AI.engine === "gemini" ? "🌐 Gemini (Online)" : AI.engine === "gemma" ? "🟢 Gemma 4 (Offline)" : "⚡ Auto Mode")
+        ),
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer;font-weight:700",
+          onclick: () => { tab = "ask"; render(); }
+        }, isHi ? "पूछें →" : "Open Triage →")
+      ),
+      h("div", { style: "display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px" },
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer;justify-content:center;font-size:11px;" + (AI.engine === "gemma" ? "background:#10b981;color:#fff;font-weight:700" : ""),
+          onclick: () => { setAIEngine("gemma"); }
+        }, "🟢 Gemma 4 (Offline)"),
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer;justify-content:center;font-size:11px;" + (AI.engine === "gemini" ? "background:#3b82f6;color:#fff;font-weight:700" : ""),
+          onclick: () => { setAIEngine("gemini"); }
+        }, "🌐 Gemini (Online)"),
+        h("button", {
+          class: "pill",
+          style: "cursor:pointer;justify-content:center;font-size:11px;" + (AI.engine === "auto" ? "background:#f59e0b;color:#000;font-weight:700" : ""),
+          onclick: () => { setAIEngine("auto"); }
+        }, "⚡ Auto Switch")
+      )
+    ),
+
+    // User Profile Quick Card
+    h("div", { class: "card" },
+      h("div", { class: "row", style: "margin-bottom:8px" },
+        h("h2", { style: "margin:0" }, isHi ? "👤 आपका आपातकालीन हेल्थ प्रोफाइल" : "👤 Your Emergency Health Profile"),
+        h("button", { class: "pill", style: "cursor:pointer", onclick: () => { tab = "vault"; render(); } }, isHi ? "संपादित करें" : "Edit Profile")
+      ),
+      h("div", { style: "display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px" },
+        h("div", {}, h("span", { class: "mut" }, isHi ? "नाम / उपनाम: " : "Name: "), h("b", {}, p.name || (isHi ? "दर्ज नहीं" : "Not Set"))),
+        h("div", {}, h("span", { class: "mut" }, isHi ? "रक्त समूह: " : "Blood Group: "), h("b", {}, p.blood || (isHi ? "दर्ज नहीं" : "Not Set"))),
+        h("div", {}, h("span", { class: "mut" }, isHi ? "एलर्जी: " : "Allergies: "), h("b", {}, p.allergies || (isHi ? "कोई नहीं" : "None"))),
+        h("div", {}, h("span", { class: "mut" }, isHi ? "ट्राइएज स्तर: " : "Triage Level: "), lvBadge(lvl(score(p))))
+      ),
+      (p.c1n || p.c2n) ? h("div", { style: "margin-top:10px;font-size:12px;border-top:1px solid var(--bd);padding-top:8px" },
+        h("b", {}, isHi ? "📞 सहेजे गए आपातकालीन संपर्क: " : "📞 Emergency Contacts: "),
+        h("span", { class: "mut" }, [p.c1n && `${p.c1n} (${p.c1p})`, p.c2n && `${p.c2n} (${p.c2p})`].filter(Boolean).join(" · "))
+      ) : null
+    ),
+
+    // Priority Nearest Shelter Card
+    nearest ? h("div", { class: "card", style: "border-left:4px solid var(--ok)" },
+      h("div", { class: "row" },
+        h("div", {},
+          h("span", { class: "pill", style: "color:var(--ok);border-color:var(--ok);margin-bottom:4px" }, isHi ? "⭐ सबसे निकटतम आश्रय" : "⭐ Nearest Local Shelter"),
+          h("h2", { style: "margin:2px 0" }, nearest.n),
+          h("div", { class: "mut" },
+            nearest.d ? (fd(nearest.d) + " " + dir(nearest.b) + " · ") : "" +
+            (isHi ? `पानी: ${nearest.water}L · बिस्तर: ${nearest.beds} · राशन: ${nearest.food}` : `Water: ${nearest.water}L · Beds: ${nearest.beds} · Food: ${nearest.food}`)
+          )
+        ),
+        h("button", {
+          class: "btn ok",
+          onclick: () => { tab = "map"; render(); }
+        }, isHi ? "दिशा देखें" : "View Map")
+      )
+    ) : null,
+
+    // Daily Health Records Form
+    h("div", { class: "card" },
+      h("h2", {}, isHi ? "🩺 दैनिक स्वास्थ्य रिकॉर्ड (Daily Vitals Log)" : "🩺 Daily Health Records (Camp Log)"),
+      h("p", { class: "mut", style: "margin:0 0 10px;font-size:12px" },
+        isHi ? "राहत शिविर में अपने दैनिक विटल्स रिकॉर्ड करें। यह डेटा ऑफ़लाइन सुरक्षित रहता है।" : "Log your vitals in the relief camp. Syncs locally to camp medical operators."
+      ),
+      h("form", { onsubmit: logDailyHealth },
+        h("div", { style: "display:grid;grid-template-columns:1fr 1fr;gap:8px" },
+          h("input", { type: "text", name: "bp", placeholder: isHi ? "रक्तचाप BP (120/80)" : "Blood Pressure (120/80)" }),
+          h("input", { type: "number", step: "0.1", name: "temp", placeholder: isHi ? "तापमान Temp (°F)" : "Body Temp (°F)" }),
+          h("input", { type: "number", name: "pulse", placeholder: isHi ? "हार्ट रेट Pulse (BPM)" : "Pulse / Heart (BPM)" }),
+          h("input", { type: "number", name: "spo2", placeholder: isHi ? "ऑक्सीजन SpO2 (%)" : "Oxygen SpO2 (%)" })
+        ),
+        h("input", { type: "number", name: "sugar", placeholder: isHi ? "ब्लड शुगर (mg/dL) - वैकल्पिक" : "Blood Sugar (mg/dL) - Optional" }),
+        h("input", { type: "text", name: "notes", placeholder: isHi ? "लक्षण / कोई अन्य परेशानी (उदा. चक्कर, खाँसी)..." : "Symptoms / Notes (e.g. mild cough, dizziness)..." }),
+        h("button", { type: "submit", class: "btn blue", style: "width:100%;margin-top:6px" }, isHi ? "आज के विटल्स दर्ज करें" : "Log Today's Health Vitals")
+      ),
+
+      // Recent Health History
+      healthRecords.length > 0 ? h("div", { style: "margin-top:14px;border-top:1px solid var(--bd);padding-top:10px" },
+        h("b", { style: "font-size:13px" }, isHi ? "हाल के स्वास्थ्य रिकॉर्ड:" : "Recent Vitals Log:"),
+        healthRecords.slice(0, 3).map(hr =>
+          h("div", { style: "background:rgba(255,255,255,.03);padding:8px;border-radius:8px;margin-top:6px;font-size:12px;display:flex;justify-content:space-between" },
+            h("span", {}, `BP: ${hr.bp || '–'} · SpO2: ${hr.spo2 ? hr.spo2 + '%' : '–'} · Pulse: ${hr.pulse || '–'} bpm`),
+            h("span", { class: "mut" }, new Date(hr.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
+          )
+        )
+      ) : null
+    )
+  );
+}
+
+// 2. SOS Screen
+function sosScreen() {
+  const p = P();
+  return h("div", {},
+    h("div", { class: "top" },
+      h("h1", {}, isHi ? "🆘 आपातकालीन सहायता" : "🆘 Emergency SOS Coordination"),
+      mine ? h("span", { class: "pill", style: "background:var(--ac);color:#fff;font-weight:700" }, LB[mine.status] || mine.status) : null
+    ),
+
+    mine ? h("div", { class: "card", style: "border:2px solid var(--ac);text-align:center;padding:20px" },
+      h("div", { class: "pulse-gps", style: "margin:0 auto 10px" }),
+      h("b", { style: "font-size:18px;color:var(--ac)" }, isHi ? "एसओएस संदेश प्रसारित हो रहा है" : "SOS ACTIVE & BROADCASTING"),
+      h("p", { class: "mut", style: "margin:8px 0 14px" },
+        isHi ? "स्थानीय राहत ऑपरेटर को आपकी जीपीएस स्थिति और स्वास्थ्य प्रोफाइल भेज दी गई है।" : "Local responders and shelter command are receiving your real-time GPS coordinates."
+      ),
+      h("div", { class: "card", style: "text-align:left;background:rgba(0,0,0,.2);font-size:13px" },
+        h("div", {}, h("b", {}, isHi ? "नाम: " : "Victim: "), mine.name),
+        h("div", {}, h("b", {}, isHi ? "प्राथमिकता: " : "Priority: "), lvBadge(mine.level)),
+        h("div", {}, h("b", {}, isHi ? "निकटतम राहत केंद्र: " : "Target Shelter: "), mine.shelter),
+        h("div", {}, h("b", {}, isHi ? "स्थान: " : "GPS Coordinates: "), loc ? `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)} (±${loc.acc}m)` : "Calculating...")
+      ),
+
+      // 1-Tap Offline SMS Alert Links for Emergency Contacts
+      (p.c1p || p.c2p) ? h("div", { style: "margin:14px 0" },
+        h("b", { style: "font-size:13px;display:block;margin-bottom:6px" }, isHi ? "📲 संपर्कों को सीधे ऑफलाइन एसएमएस भेजें:" : "📲 Send Direct Offline SMS to Contacts:"),
+        p.c1p ? h("a", {
+          href: `sms:${p.c1p}?body=${encodeURIComponent("EMERGENCY! I triggered RAKSHAK SOS at " + (loc ? loc.lat.toFixed(5) + "," + loc.lng.toFixed(5) : "Disaster Area") + ". Blood: " + (p.blood||"") + ". Allergies: " + (p.allergies||""))}`,
+          class: "btn ok",
+          style: "width:100%;text-decoration:none;margin-bottom:6px"
+        }, isHi ? `📩 ${p.c1n || 'संपर्क 1'} को एसएमएस भेजें` : `📩 Send SMS to ${p.c1n || 'Contact 1'} (${p.c1p})`) : null,
+        p.c2p ? h("a", {
+          href: `sms:${p.c2p}?body=${encodeURIComponent("EMERGENCY! I triggered RAKSHAK SOS at " + (loc ? loc.lat.toFixed(5) + "," + loc.lng.toFixed(5) : "Disaster Area"))}`,
+          class: "btn ok",
+          style: "width:100%;text-decoration:none"
+        }, isHi ? `📩 ${p.c2n || 'संपर्क 2'} को एसएमएस भेजें` : `📩 Send SMS to ${p.c2n || 'Contact 2'} (${p.c2p})`) : null
+      ) : null,
+
+      h("button", { class: "btn f", style: "width:100%;margin-top:10px", onclick: clearSOS },
+        isHi ? "मैं अब सुरक्षित हूँ / एसओएस रद्द करें" : "I Am Safe Now / Cancel SOS"
+      )
+    ) : h("div", { class: "card" },
+      h("h2", {}, isHi ? "आपातकालीन स्थिति चुनें" : "Select Emergency Type"),
+      h("div", { class: "chips", style: "margin-bottom:12px" },
+        [
+          "Severe Bleeding", "Heart Attack / Chest Pain", "Difficulty Breathing",
+          "Building Collapse / Trapped", "Flood / Drowning", "Labour / Delivery",
+          "Fracture / Severe Injury", "Animal / Snake Bite"
+        ].map(item =>
+          h("div", {
+            class: "chip " + (em.desc === item ? "on" : ""),
+            onclick: () => { em.desc = item; render(); }
+          }, item)
+        )
+      ),
+      h("input", {
+        type: "text",
+        placeholder: isHi ? "कमरा नंबर, मंजिल या लैंडमार्क (उदा. रूम 204, दूसरी मंजिल)..." : "Room, Floor, or Landmark (e.g. Room 204, 2nd floor)...",
+        value: em.room,
+        oninput: e => { em.room = e.target.value; }
+      }),
+      h("button", {
+        class: "btn f",
+        style: "width:100%;margin-top:10px;font-size:16px;font-weight:800;padding:14px",
+        onclick: () => sendAlert(false)
+      }, isHi ? "तत्काल एसओएस भेजें" : "BROADCAST SOS ALERT NOW")
+    )
+  );
+}
+
+// 3. Leaflet Offline Map Screen
+function mapScreen() {
+  const sorted = getSortedShelters();
+
+  setTimeout(() => {
+    const el = document.getElementById("leaflet-map");
+    if (!el) return;
+    if (clientLeafletMap) {
+      clientLeafletMap.remove();
+      clientLeafletMap = null;
+    }
+
+    const centerLat = loc ? loc.lat : 23.23;
+    const centerLng = loc ? loc.lng : 77.42;
+    clientLeafletMap = L.map('leaflet-map').setView([centerLat, centerLng], 13);
+
+    L.tileLayer('/api/tiles/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      minZoom: 10,
+      attribution: 'RAKSHAK Offline Tactical Grid'
+    }).addTo(clientLeafletMap);
+
+    // User Location Pin
+    if (loc && loc.lat != null) {
+      const userIcon = L.divIcon({
+        className: 'user-pin',
+        html: `<div style="background:#ef4444;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(239,68,68,.9);border:2px solid #fff;color:#fff;font-size:11px">📍</div>`,
+        iconSize: [22, 22]
+      });
+      L.marker([loc.lat, loc.lng], { icon: userIcon }).addTo(clientLeafletMap).bindPopup("<b>📍 Your Position</b>").openPopup();
+      L.circle([loc.lat, loc.lng], { radius: loc.acc || 25, color: '#ef4444', fillOpacity: 0.15 }).addTo(clientLeafletMap);
+    }
+
+    // Shelters Pins
+    sorted.forEach(s => {
+      if (!s.la || !s.lo) return;
+      const icon = L.divIcon({
+        className: 'sh-pin',
+        html: `<div style="background:#10b981;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(16,185,129,.7);border:2px solid #fff;font-size:12px">🏛️</div>`,
+        iconSize: [24, 24]
+      });
+      L.marker([s.la, s.lo], { icon }).addTo(clientLeafletMap).bindPopup(
+        `<b>🏛️ ${s.n}</b><br>💧 Water: ${s.water}L · 🛏️ Beds: ${s.beds}<br>🍞 Food: ${s.food} · 🩹 Kits: ${s.kits}`
+      );
+    });
+
+    // Draw route to closest shelter
+    if (loc && sorted[0] && sorted[0].la) {
+      L.polyline([[loc.lat, loc.lng], [sorted[0].la, sorted[0].lo]], {
+        color: '#10b981',
+        weight: 3,
+        dashArray: '6, 8',
+        opacity: 0.8
+      }).addTo(clientLeafletMap);
+    }
+  }, 100);
+
+  return h("div", {},
+    h("div", { class: "top" },
+      h("h1", {}, isHi ? "🗺️ ऑफलाइन मानचित्र एवं राहत केंद्र" : "🗺️ Offline Maps & Relief Havens"),
+      h("span", { class: "pill", style: "border-color:var(--ok);color:var(--ok)" }, isHi ? "ऑफ़लाइन मैप टाइल्स सक्रिय" : "Offline Tiles Cached")
+    ),
+
+    // Leaflet Interactive Container
+    h("div", { id: "leaflet-map" }),
+
+    // Shelters List sorted by proximity
+    h("h2", {}, isHi ? "निकटतम राहत केंद्र (दूरी अनुसार क्रमबद्ध)" : "Nearby Shelters (Prioritized by Distance)"),
+    sorted.map((s, idx) =>
+      h("div", { class: "card", style: idx === 0 ? "border:2px solid var(--ok)" : "" },
+        h("div", { class: "row" },
+          h("div", {},
+            idx === 0 ? h("span", { class: "pill", style: "color:var(--ok);border-color:var(--ok);margin-bottom:4px" }, isHi ? "⭐ सबसे निकटतम" : "⭐ Closest Haven") : null,
+            h("b", { style: "font-size:16px" }, s.n),
+            h("div", { class: "mut", style: "margin-top:2px" },
+              (s.d ? fd(s.d) + " " + dir(s.b) + " (" + Math.round(s.b) + "°) · " : "") +
+              (isHi ? `पानी: ${s.water}L · बिस्तर: ${s.beds} · राशन: ${s.food}` : `Water: ${s.water}L · Beds: ${s.beds} · Food: ${s.food} packs`)
+            )
+          ),
+          h("button", {
+            class: "btn ok",
+            onclick: () => {
+              tab = "supplies";
+              render();
+            }
+          }, isHi ? "सामान अनुरोध" : "Request Help")
+        )
+      )
+    )
+  );
+}
+
+// 4. Stealth Calculator View
+function calcView() {
+  return h("div", {},
+    h("div", { class: "top" },
+      h("h1", {}, isHi ? "🧮 कैलकुलेटर शील्ड" : "🧮 Calculator Shield"),
+      h("button", { class: "pill", onclick: () => { tab = "home"; render(); } }, "✕ " + (isHi ? "वापस" : "Back"))
+    ),
+    h("div", { class: "card", style: "border-left:4px solid var(--wn)" },
+      h("b", {}, isHi ? "गुप्त एसओएस निर्देश:" : "Stealth Emergency Trigger:"),
+      h("p", { class: "mut", style: "margin:4px 0 0;font-size:12px" },
+        isHi ? "कैलकुलेटर में 911= या 112= टाइप करें। स्क्रीन पर कैलकुलेटर बना रहेगा और शांत एसओएस भेजा जाएगा।" : "Type 911= or 112= to secretly trigger SOS without any sound or alarm."
+      )
+    ),
+    h("div", { class: "calc" },
+      h("div", { class: "calc-screen" }, calcState.display),
+      h("div", { class: "calc-grid" },
+        ["C", "/", "*", "-"].map(b => h("button", { class: "calc-btn op", onclick: () => calcPress(b) }, b)),
+        ["7", "8", "9", "+"].map(b => h("button", { class: "calc-btn " + (b === "+" ? "op" : ""), onclick: () => calcPress(b) }, b)),
+        ["4", "5", "6", "="].map(b => h("button", { class: "calc-btn " + (b === "=" ? "eq" : ""), onclick: () => calcPress(b) }, b)),
+        ["1", "2", "3", "0"].map(b => h("button", { class: "calc-btn", onclick: () => calcPress(b) }, b))
+      )
+    )
+  );
+}
+
+// 5. Supply Requests Screen
+function suppliesScreen() {
+  const sorted = getSortedShelters();
+  return h("div", {},
+    h("div", { class: "top" },
+      h("h1", {}, isHi ? "📦 राहत सामग्री एवं राशन" : "📦 Relief Supplies & Inventory"),
+      h("button", { class: "pill", onclick: () => { tab = "map"; render(); } }, "🗺️ Havens")
+    ),
+    h("div", { class: "card" },
+      h("h2", {}, isHi ? "सामान या दवाई का अनुरोध करें" : "Request Supplies or Medication"),
+      h("form", {
+        onsubmit: async e => {
+          e.preventDefault();
+          const f = e.target;
+          if (window.RAKSHAK_API) {
+            await RAKSHAK_API.requestSupply({
+              name: P().name || "Citizen",
+              item: f.item.value,
+              qty: +f.qty.value || 1,
+              urgency: f.urgency.value,
+              shelter: f.shelter.value,
+              room: f.room.value,
+              notes: f.notes.value
+            });
+            f.reset();
+            alert(isHi ? "सामग्री अनुरोध सबमिट हुआ।" : "Supply request submitted.");
+            loadSupplies();
+            render();
+          }
+        }
+      },
+        h("input", { type: "text", name: "item", placeholder: isHi ? "आवश्यक सामग्री (उदा. ओआरएस, इंसुलिन, पट्टी, राशन)..." : "Required Item (e.g. ORS, Insulin, Bandages, Baby Formula)...", required: "" }),
+        h("div", { style: "display:grid;grid-template-columns:1fr 1fr;gap:8px" },
+          h("input", { type: "number", name: "qty", min: "1", value: "1", placeholder: "Quantity" }),
+          h("select", { name: "urgency" },
+            ["Standard", "Urgent", "Critical"].map(u => h("option", { value: u }, u))
+          )
+        ),
+        h("select", { name: "shelter" },
+          sorted.map(s => h("option", { value: s.n }, `${s.n} (${s.d ? fd(s.d) : 'Relief Haven'})`))
+        ),
+        h("input", { type: "text", name: "room", placeholder: isHi ? "कमरा नंबर / शिविर का स्थान..." : "Camp Room / Tent / Location..." }),
+        h("input", { type: "text", name: "notes", placeholder: isHi ? "अतिरिक्त विवरण..." : "Additional details..." }),
+        h("button", { type: "submit", class: "btn f", style: "width:100%;margin-top:6px" }, isHi ? "अनुरोध भेजें" : "Submit Supply Request")
+      )
+    ),
+
+    // Real-Time Stock Status
+    h("h2", {}, isHi ? "शिविर स्टॉक स्तर" : "Live Shelter Inventory"),
+    sorted.map(s =>
+      h("div", { class: "card" },
+        h("b", { style: "font-size:15px" }, s.n),
+        h("div", { style: "display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;font-size:13px" },
+          h("div", { class: "pill" }, `💧 ${s.water || 0}L Water`),
+          h("div", { class: "pill" }, `🍞 ${s.food || 0} Food`),
+          h("div", { class: "pill" }, `🛏️ ${s.beds || 0} Beds`),
+          h("div", { class: "pill" }, `🩹 ${s.kits || 0} Kits`),
+          h("div", { class: "pill" }, `🩺 ${s.med || 0} Medics`),
+          h("div", { class: "pill" }, `⛺ ${s.mat || 0} Mats`)
+        )
+      )
+    )
+  );
+}
+
+// 6. Private Health Vault
+function vaultScreen() {
+  const p = P();
+  return h("div", {},
+    h("div", { class: "top" },
+      h("h1", {}, isHi ? "🔒 निजी हेल्थ वॉल्ट" : "🔒 Private Health Vault"),
+      h("span", { class: "pill", style: "color:var(--ok);border-color:var(--ok)" }, isHi ? "केवल आपके डिवाइस पर" : "Device Storage Only")
+    ),
+
+    h("div", { class: "card" },
+      h("h2", {}, isHi ? "व्यक्तिगत जानकारी" : "Personal Information"),
+      h("input", { type: "text", placeholder: isHi ? "आपका नाम" : "Your Name or Alias", value: p.name || "", onchange: e => upP({ name: e.target.value }) }),
+      h("select", { onchange: e => upP({ blood: e.target.value }) },
+        ["", "A+", "A−", "B+", "B−", "AB+", "AB−", "O+", "O−"].map(b =>
+          h("option", { value: b, ...(p.blood === b ? { selected: "" } : {}) }, b || (isHi ? "रक्त समूह चुनें" : "Select Blood Group"))
+        )
+      ),
+      h("input", { type: "text", placeholder: isHi ? "एलर्जी (उदा. पेनिसिलिन, मूंगफली)..." : "Critical Allergies (e.g. Penicillin, Peanuts)...", value: p.allergies || "", onchange: e => upP({ allergies: e.target.value }) })
+    ),
+
+    h("div", { class: "card" },
+      h("h2", {}, isHi ? "असुरक्षा एवं स्वास्थ्य कारक" : "Vulnerability & Triage Attributes"),
+      h("select", { onchange: e => upP({ preg: e.target.value }) },
+        [["0", "Not pregnant"], ["1", "Pregnant (1st/2nd Trimester)"], ["3", "Pregnant (3rd Trimester)"]].map(([v, t]) =>
+          h("option", { value: v, ...((p.preg || "0") === v ? { selected: "" } : {}) }, t)
+        )
+      ),
+      h("label", { class: "c" },
+        h("input", { type: "checkbox", ...(p.mob ? { checked: "" } : {}), onchange: e => upP({ mob: e.target.checked }) }),
+        isHi ? "गतिशीलता में कमी / व्हीलचेयर उपयोगकर्ता" : "Mobility impairment / Wheelchair user"
+      ),
+      h("label", { class: "c" },
+        h("input", { type: "checkbox", ...(p.eld ? { checked: "" } : {}), onchange: e => upP({ eld: e.target.checked }) }),
+        isHi ? "वरिष्ठ नागरिक (आयु 60+)" : "Senior citizen (Age 60+)"
+      ),
+      h("label", { class: "c" },
+        h("input", { type: "checkbox", ...(p.chr ? { checked: "" } : {}), onchange: e => upP({ chr: e.target.checked }) }),
+        isHi ? "गंभीर बीमारी (हृदय, मधुमेह, अस्थमा)" : "Chronic medical condition (Heart, Diabetes, Asthma)"
+      ),
+      h("label", { class: "c" },
+        h("input", { type: "checkbox", ...(p.med ? { checked: "" } : {}), onchange: e => upP({ med: e.target.checked }) }),
+        isHi ? "दैनिक आवश्यक दवाइयों की जरूरत" : "Requires daily prescription medications"
+      )
+    ),
+
+    h("div", { class: "card" },
+      h("h2", {}, isHi ? "भरोसेमंद आपातकालीन संपर्क" : "Trusted Offline Emergency Contacts"),
+      h("input", { type: "text", placeholder: isHi ? "संपर्क 1 का नाम" : "Contact 1 Name", value: p.c1n || "", onchange: e => upP({ c1n: e.target.value }) }),
+      h("input", { type: "tel", placeholder: isHi ? "संपर्क 1 फोन नंबर" : "Contact 1 Phone Number", value: p.c1p || "", onchange: e => upP({ c1p: e.target.value }) }),
+      h("input", { type: "text", placeholder: isHi ? "संपर्क 2 का नाम" : "Contact 2 Name", value: p.c2n || "", onchange: e => upP({ c2n: e.target.value }) }),
+      h("input", { type: "tel", placeholder: isHi ? "संपर्क 2 फोन नंबर" : "Contact 2 Phone Number", value: p.c2p || "", onchange: e => upP({ c2p: e.target.value }) })
+    )
+  );
+}
+
+// Navigation Tabs
+const TABS = [
+  ["home", "🏠", "Home", home],
+  ["sos", "🆘", "SOS", sosScreen],
+  ["ask", "🤖", "Triage", ask],
+  ["map", "🗺️", "Map", mapScreen],
+  ["supplies", "📦", "Supplies", suppliesScreen],
+  ["vault", "🔒", "Vault", vaultScreen]
+];
+
+function render() {
+  const a = document.getElementById("app");
+  if (!a) return;
+  const y = a.scrollTop;
+  let screenFunc;
+  if (tab === "calc") screenFunc = calcView;
+  else {
+    const found = TABS.find(t => t[0] === tab);
+    screenFunc = found ? found[3] : home;
+  }
+
+  a.replaceChildren(
+    h("div", { class: "top" },
+      h("span", { class: "pill" }, !net ? "📵 Mesh Mode (Local Wi-Fi)" : db ? "● Live Mesh Synced" : "Local Standalone"),
+      h("button", {
+        class: "pill",
+        style: "cursor:pointer;border:0;background:none",
+        onclick: () => {
+          const cur = document.documentElement.getAttribute("data-theme") || "dark";
+          const next = cur === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          try { localStorage.setItem("rakshak_theme", next); } catch(e){}
+        }
+      }, "🌓 Theme")
+    ),
+    screenFunc()
+  );
+  a.scrollTop = y;
+
+  const nav = document.getElementById("nav");
+  if (nav) {
+    nav.replaceChildren(
+      ...TABS.map(t =>
+        h("button", {
+          class: tab === t[0] ? "on" : "",
+          onclick: () => { tab = t[0]; render(); }
+        }, h("span", {}, t[1]), t[2])
+      )
+    );
+  }
+}
+
+addEventListener("online", () => { net = true; render(); });
+addEventListener("offline", () => { net = false; render(); });
+
+// Initialization
+try {
+  const savedTheme = localStorage.getItem("rakshak_theme");
+  if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+} catch(e){}
+
+render();
+geo();
+loadHealthHistory();
+
+(async () => {
+  try {
+    if (!window.claude) return;
+    const u = await claude.use("user"), d = await claude.use("db");
+    uid = u ? await u.id() : null;
+    if (d && uid) {
+      db = d;
+      db.doc("sos/" + uid).onSnapshot(s => {
+        if (s.exists) mine = s.data();
+        else if (!offline) mine = null;
+        render();
+      });
+      db.collection("sos").onSnapshot(q => {
+        all = q.docs.map(x => ({ id: x.id, ...x.data() }));
+        render();
+      });
+    }
+    await loadSupplies();
+    render();
+  } catch(e){}
+})();
+
+if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !window.SHNATIVE) {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script></body></html>

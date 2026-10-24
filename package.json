@@ -1,0 +1,21 @@
+{
+  "name": "rakshak",
+  "version": "2.1.0",
+  "description": "RAKSHAK: Zero-Internet Emergency Coordination & Stealth Mesh Platform",
+  "private": true,
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node --no-warnings server/server.js",
+    "kb": "node tools/build-kb.js",
+    "dataset": "python training/build_dataset.py"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "leaflet": "^1.9.4",
+    "qrcode-terminal": "^0.12.0",
+    "selfsigned": "^2.4.1"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

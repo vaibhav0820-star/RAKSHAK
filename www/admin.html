@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAKSHAK · Disaster Response Command Center</title>
+<link rel="stylesheet" href="leaflet/leaflet.css">
+<style>
+:root{--bg:#0b0d13;--card:#141824;--tx:#f1f5f9;--mut:#94a3b8;--bd:#222b40;--ac:#ef4444;--ok:#10b981;--wn:#f59e0b;--blue:#3b82f6}
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;padding:16px 20px;background:var(--bg);color:var(--tx)}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;border-bottom:1px solid var(--bd);padding-bottom:14px;margin-bottom:18px}
+h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+h2{margin:24px 0 10px;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:space-between}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;overflow-x:auto;box-shadow:0 6px 18px rgba(0,0,0,.3);margin-bottom:18px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:10px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+input,select{padding:7px 10px;border:1px solid var(--bd);border-radius:8px;background:rgba(0,0,0,.3);color:var(--tx);font:inherit}
+input.n{width:160px}input.num{width:70px}
+button{padding:6px 12px;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:var(--tx);border-radius:8px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+button:hover{background:rgba(255,255,255,.1)}button.f{background:var(--ac);border-color:var(--ac);color:#fff}button.ok{background:var(--ok);border-color:var(--ok);color:#fff}button.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.pill{padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid var(--bd);display:inline-flex;align-items:center;gap:4px}
+.lv{color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.5px}
+.Critical{background:var(--ac)}.High{background:var(--wn)}.Medium{background:#eab308;color:#000}.Standard{background:var(--ok)}
+.m{color:var(--mut)}.grid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.stat-box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;text-align:center}
+.stat-val{font-size:24px;font-weight:800;margin-top:4px}
+.triage-panel{background:rgba(59,130,246,.08);border:1px solid var(--blue);border-radius:10px;padding:12px;margin:10px 0;white-space:pre-wrap;font-size:13px;line-height:1.5}
+.badge-stealth{background:#9333ea;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;margin-left:4px;letter-spacing:.5px}
+.stealth-row{background:rgba(147,51,234,.1)}
+#map-wrap{height:420px;border-radius:12px;overflow:hidden;border:1px solid var(--bd);margin-bottom:18px}
+.contact-chip{background:rgba(16,185,129,.12);border:1px solid var(--ok);color:var(--tx);padding:2px 6px;border-radius:6px;font-size:11px;margin-right:4px;display:inline-block}
+.pulse-icon{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 rgba(239,68,68,.7);animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 10px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+</style></head>
+<body>
+<header>
+  <div>
+    <h1>🛡️ RAKSHAK Command Center</h1>
+    <div class="m" style="font-size:12px">Zero-Internet Local Wi-Fi Mesh Emergency &amp; Triage Operator Console</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span id="ai-gemma-status" class="pill" style="color:var(--ok);border-color:var(--ok)">🟢 Gemma 4 (Offline)</span>
+    <span id="ai-gemini-status" class="pill" style="color:var(--blue);border-color:var(--blue)">🌐 Gemini (Online)</span>
+    <button onclick="setGeminiKey()">🔑 Gemini Key</button>
+    <button onclick="exp()">⬇ Export JSON</button>
+    <button class="f" onclick="load()">↻ Refresh</button>
+  </div>
+</header>
+
+<div class="grid-stats">
+  <div class="stat-box"><div class="m">Active SOS</div><div id="cnt-sos" class="stat-val" style="color:var(--ac)">0</div></div>
+  <div class="stat-box"><div class="m">Pending Supplies</div><div id="cnt-sup" class="stat-val" style="color:var(--wn)">0</div></div>
+  <div class="stat-box"><div class="m">Relief Havens</div><div id="cnt-sh" class="stat-val" style="color:var(--ok)">0</div></div>
+  <div class="stat-box"><div class="m">Tracked Devices</div><div id="cnt-dev" class="stat-val">0</div></div>
+</div>
+
+<h2>🗺️ Live Offline Tactical Map &amp; Real-Time Tracking</h2>
+<div class="card" style="padding:10px">
+  <div id="map-wrap"></div>
+  <div style="display:flex;gap:14px;align-items:center;margin-top:6px;font-size:12px;color:var(--mut)">
+    <span><span class="pulse-icon"></span> Victim SOS Location (Live GPS)</span>
+    <span>🟢 Active Relief Haven (With Stock)</span>
+    <span>🔵 Connected Device</span>
+    <span style="margin-left:auto">Tiles: Served from Local Disk (/api/tiles)</span>
+  </div>
+</div>
+
+<h2>🚨 Live Emergency SOS Broadcasts</h2>
+<div class="card"><table id="sos"></table></div>
+
+<h2>📦 Shelter Inventory &amp; Volunteer Stock Adjuster</h2>
+<div class="card">
+  <table id="sh"></table>
+  <p style="margin:14px 0 0"><button class="ok" onclick="addSh()">+ Add Emergency Haven</button></p>
+</div>
+
+<h2>🚚 User Supply Requests Queue</h2>
+<div class="card"><table id="sup"></table></div>
+
+<h2>🩺 Camp Health Records (Daily Vitals)</h2>
+<div class="card"><table id="health-tbl"></table></div>
+
+<h2>📱 Registered Local Devices</h2>
+<div class="card"><table id="us"></table></div>
+
+<script src="leaflet/leaflet.js"></script>
+<script>
+const H = () => ({ 'content-type': 'application/json', 'x-admin-pin': sessionStorage.pin || '' });
+const A = async (m, u, b) => {
+  let r = await fetch(u, { method: m, headers: H(), body: b ? JSON.stringify(b) : undefined });
+  if (r.status === 401) {
+    sessionStorage.pin = prompt('Enter RAKSHAK Operator PIN') || '';
+    return A(m, u, b);
+  }
+  return r;
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ST = ['sos', 'dispatched', 'enroute', 'safe'];
+const LB = { sos: 'SOS Broadcasted', dispatched: 'Dispatched', enroute: 'En Route', safe: 'Safe' };
+
+let map = null;
+let victimMarkers = {};
+let shelterMarkers = {};
+let victimTrails = {};
+
+// Initialize Tactical Leaflet Map
+function initMap() {
+  if (map) return;
+  map = L.map('map-wrap').setView([23.23, 77.42], 13);
+
+  // Use local offline tile endpoint
+  L.tileLayer('/api/tiles/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    minZoom: 10,
+    attribution: 'RAKSHAK Offline Tactical Grid'
+  }).addTo(map);
+}
+
+// Check Dual AI status (Gemma 4 Offline & Gemini Online)
+async function checkAI() {
+  try {
+    const res = await (await fetch('/api/ai/status')).json();
+    if ($('ai-gemma-status')) {
+      $('ai-gemma-status').textContent = res.gemma ? (res.gemma.ready ? '🟢 Gemma 4 (Offline) Ready' : '🟠 Gemma 4 (Offline)') : '🟢 Gemma 4 (Offline)';
+    }
+    if ($('ai-gemini-status')) {
+      const g = res.gemini || {};
+      $('ai-gemini-status').textContent = g.ready ? '🌐 Gemini (Online) Ready' : (g.hasInternet ? '🌐 Gemini (Key Needed)' : '🌐 Gemini (Offline)');
+      $('ai-gemini-status').style.color = g.ready ? 'var(--blue)' : 'var(--mut)';
+      $('ai-gemini-status').style.borderColor = g.ready ? 'var(--blue)' : 'var(--bd)';
+    }
+  } catch(e) {
+    if ($('ai-gemma-status')) $('ai-gemma-status').textContent = '🟢 Gemma 4 (Offline)';
+    if ($('ai-gemini-status')) $('ai-gemini-status').textContent = '🌐 Gemini (Offline)';
+  }
+}
+
+function setGeminiKey() {
+  const k = prompt('Enter Google Gemini API Key for online cloud triage:');
+  if (k) {
+    fetch('/api/ai/gemini-key', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: k.trim() })
+    }).then(() => {
+      alert('Gemini key updated!');
+      checkAI();
+    });
+  }
+}
+
+// Update markers on tactical map
+async function updateMap(sosList, shelters, locations) {
+  initMap();
+
+  // Plot Shelters
+  shelters.forEach(s => {
+    if (!s.la || !s.lo) return;
+    const key = 'sh_' + s.id;
+    const popupContent = `<b>🏛️ ${esc(s.name)}</b><br>` +
+      `💧 Water: ${s.water || 0}L · 🍞 Food: ${s.food || 0} packs<br>` +
+      `🛏️ Beds: ${s.beds || 0} · 🩹 Kits: ${s.kits || 0}<br>` +
+      `Coordinates: ${s.la.toFixed(4)}, ${s.lo.toFixed(4)}`;
+
+    if (!shelterMarkers[key]) {
+      const icon = L.divIcon({
+        className: 'shelter-pin',
+        html: `<div style="background:#10b981;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(16,185,129,.7);border:2px solid #fff;font-size:13px">🏛️</div>`,
+        iconSize: [26, 26]
+      });
+      shelterMarkers[key] = L.marker([s.la, s.lo], { icon }).addTo(map).bindPopup(popupContent);
+    } else {
+      shelterMarkers[key].setLatLng([s.la, s.lo]).setPopupContent(popupContent);
+    }
+  });
+
+  // Plot Active SOS Victims
+  const currentSosIds = new Set();
+  sosList.filter(s => s.status !== 'safe').forEach(s => {
+    currentSosIds.add(s.id);
+    if (s.lat == null || s.lng == null) return;
+    const key = 'sos_' + s.id;
+    const popup = `<b>🚨 ${esc(s.name)}</b> <span class="lv ${s.level}">${s.level}</span><br>` +
+      `Issue: <b>${esc(s.issue || 'Emergency')}</b><br>` +
+      (s.room ? `Location/Room: ${esc(s.room)}<br>` : '') +
+      `Blood: ${esc(s.blood || 'Unknown')} · Allergies: ${esc(s.allergies || 'None')}<br>` +
+      `Contacts: ${esc(s.c1n || '–')} (${esc(s.c1p || '–')})<br>` +
+      `GPS: ${s.lat.toFixed(5)}, ${s.lng.toFixed(5)} (±${s.acc || 0}m)`;
+
+    if (!victimMarkers[key]) {
+      const icon = L.divIcon({
+        className: 'victim-pin',
+        html: `<div style="background:#ef4444;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(239,68,68,.9);border:2px solid #fff;font-size:14px;animation:pulse-dot 1.5s infinite">🆘</div>`,
+        iconSize: [28, 28]
+      });
+      victimMarkers[key] = L.marker([s.lat, s.lng], { icon }).addTo(map).bindPopup(popup);
+    } else {
+      victimMarkers[key].setLatLng([s.lat, s.lng]).setPopupContent(popup);
+    }
+
+    // Fetch and draw victim movement trail
+    fetchTrail(s.id);
+  });
+
+  // Remove resolved victim pins
+  Object.keys(victimMarkers).forEach(k => {
+    const id = k.replace('sos_', '');
+    if (!currentSosIds.has(id)) {
+      map.removeLayer(victimMarkers[k]);
+      delete victimMarkers[k];
+      if (victimTrails[id]) {
+        map.removeLayer(victimTrails[id]);
+        delete victimTrails[id];
+      }
+    }
+  });
+}
+
+async function fetchTrail(uid) {
+  try {
+    const rows = await (await fetch('/api/location/history/' + uid)).json();
+    if (!rows || rows.length < 2) return;
+    const latlngs = rows.map(r => [r.lat, r.lng]);
+    if (!victimTrails[uid]) {
+      victimTrails[uid] = L.polyline(latlngs, { color: '#ef4444', weight: 3, opacity: 0.7, dashArray: '5, 8' }).addTo(map);
+    } else {
+      victimTrails[uid].setLatLngs(latlngs);
+    }
+  } catch(e){}
+}
+
+async function load() {
+  checkAI();
+  try {
+    const d = await (await A('GET', '/api/admin/overview')).json();
+    const activeSos = d.sos.filter(s => s.status !== 'safe');
+    const pendingSupplies = (d.supplies || []).filter(s => s.status === 'Pending' || s.status === 'Approved');
+
+    $('cnt-sos').textContent = activeSos.length;
+    $('cnt-sup').textContent = pendingSupplies.length;
+    $('cnt-sh').textContent = d.shelters.length;
+    $('cnt-dev').textContent = d.docs;
+
+    // Update Tactical Map with live coordinates
+    updateMap(d.sos, d.shelters, d.locations || []);
+
+    // Render SOS table with Emergency Contacts
+    if (!d.sos.length) {
+      $('sos').innerHTML = '<tr><td class="m" style="padding:16px">No active emergency alerts. All clear.</td></tr>';
+    } else {
+      $('sos').innerHTML = '<tr><th>Patient / Alias</th><th>Priority</th><th>Chief Concern</th><th>Room / Floor</th><th>Status</th><th>Emergency Contacts</th><th>Health Profile</th><th>Live GPS</th><th>Actions</th></tr>' +
+        d.sos.map(s => {
+          const flags = (s.flags || []).join(', ');
+          const health = [flags, s.blood && ('Blood: ' + s.blood), s.allergies && ('Allergy: ' + s.allergies)].filter(Boolean).join(' · ');
+          const isStealth = s.stealth || (s.issue && s.issue.includes('STEALTH'));
+          const c1 = s.c1n ? `<span class="contact-chip">📞 ${esc(s.c1n)}: <a href="tel:${esc(s.c1p)}" style="color:var(--ok)">${esc(s.c1p)}</a></span>` : '';
+          const c2 = s.c2n ? `<span class="contact-chip">📞 ${esc(s.c2n)}: <a href="tel:${esc(s.c2p)}" style="color:var(--ok)">${esc(s.c2p)}</a></span>` : '';
+          const contactsHtml = (c1 || c2) ? (c1 + c2) : '<span class="m">None registered</span>';
+
+          return `<tr class="${isStealth ? 'stealth-row' : ''}">
+            <td><b>${esc(s.name)}</b> ${isStealth ? '<span class="badge-stealth">STEALTH</span>' : ''}</td>
+            <td><span class="lv ${s.level}">${s.level}</span></td>
+            <td><b>${esc(s.issue || 'Emergency')}</b><div class="m" style="font-size:11px">${esc(s.desc || '')}</div></td>
+            <td><b style="color:var(--wn)">${esc(s.room || '–')}</b><div class="m" style="font-size:11px">${esc(s.where || '')}</div></td>
+            <td><span class="pill">${LB[s.status] || s.status}</span></td>
+            <td>${contactsHtml}</td>
+            <td class="m" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${esc(health || 'Normal')}</td>
+            <td>${s.lat != null ? `<a href="javascript:void(0)" onclick="centerMap(${s.lat},${s.lng})" style="color:var(--blue)">📍 ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)} (±${s.acc}m)</a>` : '<span class="m">No GPS</span>'}</td>
+            <td>
+              <button class="blue" onclick='runAITriage(${JSON.stringify(s).replace(/'/g, "&#39;")}, "gemma")'>🟢 Gemma 4</button>
+              <button class="ok" onclick='runAITriage(${JSON.stringify(s).replace(/'/g, "&#39;")}, "gemini")'>🌐 Gemini</button>
+              ${s.status !== 'safe' ? `<button class="f" onclick="advanceSOS('${s.id}')">Advance</button>` : ''}
+              <button onclick="delSOS('${s.id}')">Clear</button>
+            </td>
+          </tr>
+          <tr id="triage-row-${s.id}" style="display:none"><td colspan="9"><div id="triage-box-${s.id}" class="triage-panel"></div></td></tr>`;
+        }).join('');
+    }
+
+    // Render Shelters & Volunteer quick adjusters
+    $('sh').innerHTML = '<tr><th>Haven Name</th><th>Water (L)</th><th>Food Packs</th><th>Beds</th><th>Medics</th><th>Hygiene Kits</th><th>Maternal Kits</th><th>Coordinates</th><th>Actions</th></tr>' +
+      d.shelters.map(s => `<tr data-id="${s.id}">
+        <td><input class="n" value="${esc(s.name)}"></td>
+        <td>
+          <input class="num" type="number" value="${s.water || 0}">
+          <button onclick="quickStock(${s.id},'water',10)">+10</button>
+          <button onclick="quickStock(${s.id},'water',-10)">-10</button>
+        </td>
+        <td>
+          <input class="num" type="number" value="${s.food || 0}">
+          <button onclick="quickStock(${s.id},'food',10)">+10</button>
+          <button onclick="quickStock(${s.id},'food',-10)">-10</button>
+        </td>
+        <td>
+          <input class="num" type="number" value="${s.beds || 0}">
+          <button onclick="quickStock(${s.id},'beds',1)">+1</button>
+          <button onclick="quickStock(${s.id},'beds',-1)">-1</button>
+        </td>
+        <td><input class="num" type="number" value="${s.med}"></td>
+        <td><input class="num" type="number" value="${s.kits}"></td>
+        <td><input class="num" type="number" value="${s.mat}"></td>
+        <td><span class="m" style="font-size:11px">${s.la.toFixed(3)}, ${s.lo.toFixed(3)}</span></td>
+        <td>
+          <button class="ok" onclick="saveSh(this)">Save</button>
+          <button onclick="delSh(${s.id})">Delete</button>
+        </td>
+      </tr>`).join('');
+
+    // Render Supply Requests with Gemma 4 Substitute generator
+    const sups = d.supplies || [];
+    if (!sups.length) {
+      $('sup').innerHTML = '<tr><td class="m" style="padding:16px">No supply requests currently submitted.</td></tr>';
+    } else {
+      $('sup').innerHTML = '<tr><th>Requester</th><th>Requested Item</th><th>Qty</th><th>Urgency</th><th>Room / Haven</th><th>Notes</th><th>Status</th><th>Actions</th></tr>' +
+        sups.map(r => `<tr>
+          <td><b>${esc(r.name)}</b></td>
+          <td><b>${esc(r.item)}</b></td>
+          <td>${r.qty}</td>
+          <td><span class="lv ${r.urgency === 'Critical' ? 'Critical' : r.urgency === 'Urgent' ? 'High' : 'Standard'}">${r.urgency}</span></td>
+          <td><b style="color:var(--wn)">${esc(r.room || '–')}</b></td>
+          <td class="m">${esc(r.notes || '–')}</td>
+          <td><span class="pill" style="${r.status === 'Delivered' ? 'color:var(--ok);border-color:var(--ok)' : 'color:var(--wn);border-color:var(--wn)'}">${r.status}</span></td>
+          <td>
+            <button class="blue" onclick="suggestSubstitute('${esc(r.item)}')">🤖 Substitute</button>
+            ${r.status === 'Pending' ? `<button class="ok" onclick="setSupplyStatus('${r.id}', 'Approved')">Approve 🚚</button>` : ''}
+            ${r.status === 'Approved' ? `<button class="ok" onclick="setSupplyStatus('${r.id}', 'Delivered')">Delivered ✅</button>` : ''}
+            <button onclick="delSupply('${r.id}')">Dismiss</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    // Render Camp Health Records
+    const health = d.health || [];
+    if (!health.length) {
+      $('health-tbl').innerHTML = '<tr><td class="m" style="padding:16px">No camp daily health vitals recorded yet.</td></tr>';
+    } else {
+      $('health-tbl').innerHTML = '<tr><th>Timestamp</th><th>Device ID</th><th>Blood Pressure</th><th>Temp</th><th>Heart Rate</th><th>Oxygen SpO2</th><th>Sugar</th><th>Symptoms Note</th></tr>' +
+        health.map(h => `<tr>
+          <td>${new Date(h.created).toLocaleTimeString()}</td>
+          <td class="m">${esc(h.uid)}</td>
+          <td><b>${esc(h.bp || '–')}</b></td>
+          <td>${h.temp ? h.temp + '°F' : '–'}</td>
+          <td>${h.pulse ? h.pulse + ' bpm' : '–'}</td>
+          <td>${h.spo2 ? '<b style="color:' + (h.spo2 < 94 ? 'var(--ac)' : 'var(--ok)') + '">' + h.spo2 + '%</b>' : '–'}</td>
+          <td>${h.sugar ? h.sugar + ' mg/dL' : '–'}</td>
+          <td class="m">${esc(h.notes || '–')}</td>
+        </tr>`).join('');
+    }
+
+    // Devices overview
+    $('us').innerHTML = `<tr><th>Active Device Record</th><th>Storage Path</th><th>Timestamp</th><th>Action</th></tr>` +
+      d.sos.map(s => `<tr>
+        <td>${esc(s.name)}</td>
+        <td class="m">sos/${esc(s.id)}</td>
+        <td>${new Date(s.t).toLocaleString()}</td>
+        <td><button onclick="delSOS('${s.id}')">Expunge Record</button></td>
+      </tr>`).join('');
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function centerMap(lat, lng) {
+  initMap();
+  map.setView([lat, lng], 16);
+}
+
+// Dual-AI Urgency Analysis for SOS dispatchers (Gemma 4 & Gemini)
+async function runAITriage(sos, engine) {
+  const row = $('triage-row-' + sos.id);
+  const box = $('triage-box-' + sos.id);
+  if (row.style.display === 'table-row' && box.dataset.engine === engine) {
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = 'table-row';
+  box.dataset.engine = engine;
+  box.textContent = engine === 'gemini'
+    ? '🌐 Gemini (Online Cloud) triaging emergency urgency and dispatch protocols...'
+    : '🟢 Gemma 4 (Offline Local) triaging emergency urgency and dispatch protocols...';
+
+  try {
+    const res = await (await fetch('/api/ai/triage-analysis', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ ...sos, engine })
+    })).json();
+
+    box.innerHTML = `<b>${engine === 'gemini' ? '🌐 Gemini Advisory' : '🟢 Gemma 4 Advisory'} (${esc(res.model)})</b>\n` +
+      `<b>Urgency Assessment:</b> <span class="lv ${res.level.includes('Critical') ? 'Critical' : 'High'}">${esc(res.level)}</span>\n` +
+      `<b>Identified Risks:</b>\n${res.risks.map(r => '• ' + esc(r)).join('\n') || '• No acute clinical contraindications'}\n\n` +
+      `<b>Field Dispatch Protocol:</b>\n${esc(res.advisory)}`;
+  } catch(e) {
+    box.textContent = 'Emergency Protocol:\n1. Urgent dispatch to reported GPS coords.\n2. Ensure airway control and bleeding cessation.\n3. Prepare stretcher for shelter transport.';
+  }
+}
+
+// Gemma 4 Supply substitute prompt
+async function suggestSubstitute(item) {
+  const choice = prompt(`Gemma 4 Supply Substitute for: "${item}"\n\nQuerying local medical database...`, item);
+  if (!choice) return;
+  try {
+    const res = await (await fetch('/api/ai/supply-substitute', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ item: choice })
+    })).json();
+    alert(`🤖 Gemma 4 Substitute Advice for "${res.item}":\n\n${res.substitute}`);
+  } catch(e) {
+    alert('Use clean boiled water, sanitized cloth, and request priority haven shipment.');
+  }
+}
+
+async function quickStock(id, field, delta) {
+  await A('PATCH', `/api/shelters/${id}/stock`, { field, delta });
+  load();
+}
+
+async function setSupplyStatus(id, status) {
+  await A('PATCH', `/api/supplies/requests/${id}`, { status });
+  load();
+}
+
+async function delSupply(id) {
+  if (!confirm('Dismiss this supply request?')) return;
+  await A('DELETE', `/api/supplies/requests/${id}`);
+  load();
+}
+
+async function advanceSOS(id) {
+  const d = await (await A('GET', '/api/doc?p=sos/' + id)).json();
+  const cur = ST.indexOf(d.status);
+  const next = ST[cur + 1] || 'safe';
+  await A('PATCH', '/api/doc?p=sos/' + id, { status: next });
+  load();
+}
+
+async function delSOS(id) {
+  if (!confirm('Expunge this emergency record?')) return;
+  await A('DELETE', '/api/admin/sos/' + id);
+  load();
+}
+
+async function saveSh(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  const inps = tr.querySelectorAll('input');
+  await A(id ? 'PUT' : 'POST', id ? '/api/shelters/' + id : '/api/shelters', {
+    name: inps[0].value,
+    water: +inps[1].value,
+    food: +inps[2].value,
+    beds: +inps[3].value,
+    med: +inps[4].value,
+    kits: +inps[5].value,
+    mat: +inps[6].value
+  });
+  load();
+}
+
+async function delSh(id) {
+  if (!confirm('Delete this shelter?')) return;
+  await A('DELETE', '/api/shelters/' + id);
+  load();
+}
+
+function addSh() {
+  const name = prompt('New Haven Name:');
+  if (!name) return;
+  A('POST', '/api/shelters', { name, med: 2, kits: 20, mat: 5, water: 250, food: 200, beds: 30, la: 23.23, lo: 77.42 }).then(load);
+}
+
+function exp() {
+  window.open('/api/admin/export');
+}
+
+// Live SSE updates for admin dashboard
+const es = new EventSource('/api/events');
+es.onmessage = e => {
+  try {
+    const m = JSON.parse(e.data);
+    if (m.t === 'loc') {
+      // Live moving pin update without full reload
+      if (victimMarkers['sos_' + m.uid]) {
+        victimMarkers['sos_' + m.uid].setLatLng([m.lat, m.lng]);
+        fetchTrail(m.uid);
+      }
+    } else {
+      load();
+    }
+  } catch(err) {
+    load();
+  }
+};
+
+load();
+</script>
+</body></html>

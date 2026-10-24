@@ -1,0 +1,2 @@
+{"appId":"com.safehaven.app","appName":"SafeHaven","webDir":"../www","backgroundColor":"#fbf6f4",
+"server":{"androidScheme":"http","cleartext":true},"android":{"allowMixedContent":true}}
